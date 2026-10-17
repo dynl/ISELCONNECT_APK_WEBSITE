@@ -5,7 +5,7 @@
 import logo from './assets/ISELCONNECT.png'
 import { ref, onMounted } from 'vue'
 
-const REPO = 'ISELCONNECT-ORG/iselconnect_mobile'
+const REPO = 'dynl/ISELCONNECT_APK_WEBSITE'
 
 const commits = ref([])
 const commitsState = ref('loading') // 'loading' | 'ready' | 'error'
