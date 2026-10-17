@@ -3,6 +3,34 @@
 // If your project has no "@" alias, use a relative path instead,
 // e.g. '../assets/ISELCONNECT.png'
 import logo from './assets/ISELCONNECT.png'
+import { ref, onMounted } from 'vue'
+
+const REPO = 'ISELCONNECT-ORG/iselconnect_mobile'
+
+const commits = ref([])
+const commitsState = ref('loading') // 'loading' | 'ready' | 'error'
+
+onMounted(async () => {
+  try {
+    const res = await fetch(`https://api.github.com/repos/${REPO}/commits?per_page=3`)
+    if (!res.ok) throw new Error(res.status)
+    const data = await res.json()
+    commits.value = data.map((c) => ({
+      sha: c.sha.slice(0, 7),
+      url: c.html_url,
+      message: c.commit.message.split('\n')[0], // first line only
+      author: c.commit.author.name,
+      date: new Date(c.commit.author.date).toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      }),
+    }))
+    commitsState.value = 'ready'
+  } catch {
+    commitsState.value = 'error'
+  }
+})
 
 const steps = [
   {
@@ -81,6 +109,22 @@ const steps = [
             </div>
           </li>
         </ol>
+
+        <div class="updates">
+          <h3 class="updates-title">Recent updates</h3>
+
+          <p v-if="commitsState === 'loading'" class="updates-status">Loading…</p>
+          <p v-else-if="commitsState === 'error'" class="updates-status">
+            Couldn't load updates right now.
+          </p>
+
+          <ul v-else class="commit-list">
+            <li v-for="c in commits" :key="c.sha" class="commit">
+              <a :href="c.url" target="_blank" rel="noopener">{{ c.message }}</a>
+              <span class="commit-meta">{{ c.author }} · {{ c.date }} · {{ c.sha }}</span>
+            </li>
+          </ul>
+        </div>
 
         <aside class="note">
           <strong>Why the warning?</strong>
@@ -319,6 +363,50 @@ const steps = [
   max-width: 46ch;
   font-size: 0.94rem;
   line-height: 1.55;
+  color: var(--muted);
+}
+
+/* Recent updates (GitHub commits) */
+.updates {
+  margin-top: 26px;
+}
+.updates-title {
+  margin: 0 0 10px;
+  font-family: var(--display);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--blue);
+}
+.updates-status {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.commit-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.commit {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.commit:last-child {
+  border-bottom: 0;
+}
+.commit a {
+  color: var(--blue);
+  font-size: 0.94rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.commit a:hover {
+  text-decoration: underline;
+}
+.commit-meta {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.8rem;
   color: var(--muted);
 }
 
