@@ -6,11 +6,28 @@ import logo from './assets/ISELCONNECT.png'
 import { ref, onMounted } from 'vue'
 
 const REPO = 'dynl/ISELCONNECT_APK_WEBSITE'
+const APK_URL = '/app-debug.apk'
 
 const latest = ref(null)
 const state = ref('loading') // 'loading' | 'ready' | 'error'
+const fileSize = ref('') // e.g. "25.4 MB"; stays empty if it can't be read
+
+function formatSize(bytes) {
+  const mb = bytes / (1024 * 1024)
+  return mb >= 1 ? `${mb.toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`
+}
 
 onMounted(async () => {
+  // File size: ask the server for the APK's headers only (no download)
+  try {
+    const head = await fetch(APK_URL, { method: 'HEAD' })
+    const bytes = Number(head.headers.get('content-length'))
+    if (head.ok && bytes > 0) fileSize.value = formatSize(bytes)
+  } catch {
+    /* ignore: the size is simply not shown */
+  }
+
+  // Latest commit
   try {
     const res = await fetch(`https://api.github.com/repos/${REPO}/commits?per_page=1`)
     if (!res.ok) throw new Error(res.status)
@@ -77,7 +94,7 @@ const steps = [
         </div>
 
         <div class="download">
-          <a href="/iselconnect.apk" download="ISELCONNECT.apk" class="btn">
+          <a :href="APK_URL" download="ISELCONNECT.apk" class="btn">
             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
               <path
                 d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4 20h16"
@@ -90,13 +107,13 @@ const steps = [
             </svg>
             Download for Android
           </a>
+          <p class="meta">.apk file<template v-if="fileSize"> · {{ fileSize }}</template> · Android only</p>
           <p v-if="state === 'ready'" class="meta">
             Latest update:
             <a :href="latest.url" target="_blank" rel="noopener">{{ latest.message }}</a>
             · {{ latest.date }}
           </p>
           <p v-else-if="state === 'loading'" class="meta">Checking for updates…</p>
-          <p v-else class="meta">.apk file · Android only</p>
         </div>
       </section>
 
@@ -284,6 +301,9 @@ const steps = [
   font-size: 0.85rem;
   color: #b9b4ea;
   text-align: center;
+}
+.meta + .meta {
+  margin-top: 6px;
 }
 .meta a {
   color: var(--yellow);
